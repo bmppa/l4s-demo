@@ -11,23 +11,23 @@ variable "aws_region" {
 
 variable "flow_log_bucket_name" {
   description = "The name of the S3 bucket used to store VPC flow log (must be unique within an AWS partition)"
-  default = "vpc-flow-logs-l4s-386650976415"
+  default     = "vpc-flow-logs-l4s-386650976415"
 }
 
 variable "s3_access_log_bucket_name" {
   description = "The name of the S3 bucket used to store access log (must be unique within an AWS partition)"
-  default = "s3-access-logs-l4s-386650976415"
+  default     = "s3-access-logs-l4s-386650976415"
 }
 
 variable "ssh_allowed_host" {
   type        = string
   description = "CIDR block allowed to ssh to the EC2 VM"
-  default = "34.99.115.241/32"
+  default     = "34.99.115.241/32"
 }
 
 variable "ec2_key_pair_name" {
   description = "key pair for connecting to EC2"
-  default = "us-east-1-keypair"
+  default     = "us-east-1-keypair"
 }
 
 variable "ec2_ami" {
@@ -38,13 +38,13 @@ variable "ec2_ami" {
 
 variable "ec2_instance_type" {
   description = "Instance type used by EC2 (e.g. t2.micro)"
-  default = "t3a.small"
+  default     = "t3a.small"
 }
 
 variable "pcc_username" {
   description = "Prisma Cloud username (for SaaS Console, it is the access key ID defined in Setings > Access Keys)"
   sensitive   = "true"
-  default = "admin"
+  default     = "admin"
 }
 
 variable "pcc_password" {
@@ -54,27 +54,27 @@ variable "pcc_password" {
 
 variable "pcc_url" {
   description = "Prisma Cloud Compute Console URL (for SaaS Console, the URL can be found in Compute > Manage > System > Utilities > Path to Console)"
-  default = "https://a66ff3bd8825e4af5b773a3cb426be61-48204414.us-east-1.elb.amazonaws.com:8083"
+  default     = "https://a66ff3bd8825e4af5b773a3cb426be61-48204414.us-east-1.elb.amazonaws.com:8083"
 }
 
 variable "pcc_domain_name" {
   description = "Prisma Cloud Compute Console domain name (extracted the domain name from the console URL)"
-  default = "a66ff3bd8825e4af5b773a3cb426be61-48204414.us-east-1.elb.amazonaws.com"
+  default     = "a66ff3bd8825e4af5b773a3cb426be61-48204414.us-east-1.elb.amazonaws.com"
 }
 
 variable "vul_app_image" {
   description = "The name of the image of the vulnerable app"
-  default = "fefefe8888/l4s-demo-app:1.0"
+  default     = "fefefe8888/l4s-demo-app:1.0"
 }
 
 variable "att_svr_image" {
   description = "The name of the image of the attack server"
-  default = "fefefe8888/l4s-demo-svr:1.0"
+  default     = "fefefe8888/l4s-demo-svr:1.0"
 }
 
 variable "attacker_machine_name" {
   description = "The name of the image of the attacker machine"
-  default = "attacker"
+  default     = "attacker"
 }
 
 # ---------- variable definition ends ----------
