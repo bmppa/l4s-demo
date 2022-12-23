@@ -1,66 +1,80 @@
 provider "aws" {
-  region     = var.aws_region
+  region = var.aws_region
 }
 
 # ---------- variable definition ----------
 
 variable "aws_region" {
   description = "AWS region (e.g. us-east-2)"
+  default     = "us-east-1"
 }
 
 variable "flow_log_bucket_name" {
   description = "The name of the S3 bucket used to store VPC flow log (must be unique within an AWS partition)"
+  default = "vpc-flow-logs-l4s-386650976415"
 }
 
 variable "s3_access_log_bucket_name" {
   description = "The name of the S3 bucket used to store access log (must be unique within an AWS partition)"
-} 
+  default = "s3-access-logs-l4s-386650976415"
+}
 
 variable "ssh_allowed_host" {
-  type = string
+  type        = string
   description = "CIDR block allowed to ssh to the EC2 VM"
+  default = "34.99.115.241/32"
 }
 
 variable "ec2_key_pair_name" {
   description = "key pair for connecting to EC2"
+  default = "us-east-1-keypair"
 }
 
 variable "ec2_ami" {
   description = "AMI used for EC2"
+  #default = "ami-0fb653ca2d3203ac1"
+  default = "ami-01d08089481510ba2"
 }
 
 variable "ec2_instance_type" {
   description = "Instance type used by EC2 (e.g. t2.micro)"
+  default = "t3a.small"
 }
 
 variable "pcc_username" {
   description = "Prisma Cloud username (for SaaS Console, it is the access key ID defined in Setings > Access Keys)"
-  sensitive = "true"
+  sensitive   = "true"
+  default = "admin"
 }
 
 variable "pcc_password" {
   description = "Prisma Cloud password (for SaaS Console, it is the secret key defined in Setings > Access Keys)"
-  sensitive = "true"
+  sensitive   = "true"
 }
 
 variable "pcc_url" {
   description = "Prisma Cloud Compute Console URL (for SaaS Console, the URL can be found in Compute > Manage > System > Utilities > Path to Console)"
+  default = "https://a66ff3bd8825e4af5b773a3cb426be61-48204414.us-east-1.elb.amazonaws.com:8083"
 }
 
 variable "pcc_domain_name" {
   description = "Prisma Cloud Compute Console domain name (extracted the domain name from the console URL)"
+  default = "a66ff3bd8825e4af5b773a3cb426be61-48204414.us-east-1.elb.amazonaws.com"
 }
 
 variable "vul_app_image" {
   description = "The name of the image of the vulnerable app"
+  default = "fefefe8888/l4s-demo-app:1.0"
 }
 
 variable "att_svr_image" {
   description = "The name of the image of the attack server"
+  default = "fefefe8888/l4s-demo-svr:1.0"
 }
 
 variable "attacker_machine_name" {
   description = "The name of the image of the attacker machine"
+  default = "attacker"
 }
 
 # ---------- variable definition ends ----------
@@ -87,20 +101,34 @@ resource "aws_flow_log" "vpc_flow_log" {
 # Create S3 bucket for storing flow log
 
 resource "aws_s3_bucket" "vpc_flow_log" {
-  bucket = var.flow_log_bucket_name
+  bucket        = var.flow_log_bucket_name
   force_destroy = "true"
-  versioning {
-    enabled = true
-  }
+
   logging {
     target_bucket = aws_s3_bucket.s3_access_log.id
     target_prefix = "log/"
   }
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "aws:kms"
-      }
+}
+
+resource "aws_s3_bucket_versioning" "versioning_vpc_flow_log" {
+  bucket = aws_s3_bucket.vpc_flow_log.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_kms_key" "mykey" {
+  description             = "This key is used to encrypt bucket objects"
+  deletion_window_in_days = 10
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "encryption_vpc_flow_log" {
+  bucket = aws_s3_bucket.vpc_flow_log.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      kms_master_key_id = aws_kms_key.mykey.arn
+      sse_algorithm     = "aws:kms"
     }
   }
 }
@@ -110,25 +138,33 @@ resource "aws_s3_bucket" "vpc_flow_log" {
 resource "aws_s3_bucket_public_access_block" "vpc_flow_log" {
   bucket = aws_s3_bucket.vpc_flow_log.id
 
-  block_public_acls   = true
-  block_public_policy = true
-  ignore_public_acls = true
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
   restrict_public_buckets = true
 }
 
 # Create S3 bucket for S3 access logging
 
 resource "aws_s3_bucket" "s3_access_log" {
-  bucket = var.s3_access_log_bucket_name
+  bucket        = var.s3_access_log_bucket_name
   force_destroy = "true"
-  versioning {
-    enabled = true
+}
+
+resource "aws_s3_bucket_versioning" "versioning_s3_access_log" {
+  bucket = aws_s3_bucket.s3_access_log.id
+  versioning_configuration {
+    status = "Enabled"
   }
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "aws:kms"
-      }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "encryption_s3_access_log" {
+  bucket = aws_s3_bucket.s3_access_log.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      kms_master_key_id = aws_kms_key.mykey.arn
+      sse_algorithm     = "aws:kms"
     }
   }
 }
@@ -138,16 +174,16 @@ resource "aws_s3_bucket" "s3_access_log" {
 resource "aws_s3_bucket_public_access_block" "s3_access_log" {
   bucket = aws_s3_bucket.s3_access_log.id
 
-  block_public_acls   = true
-  block_public_policy = true
-  ignore_public_acls = true
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
   restrict_public_buckets = true
 }
 
 # Create vpc
 
 resource "aws_vpc" "vpc1" {
-  cidr_block = "10.0.0.0/16"
+  cidr_block           = "10.0.0.0/16"
   enable_dns_hostnames = "true"
   tags = {
     Name = "VPC1"
@@ -232,12 +268,12 @@ resource "aws_security_group" "allow-ssh-web" {
 # Create Ubuntu EC2
 
 resource "aws_instance" "web-server" {
-  ami               = var.ec2_ami
-  instance_type     = var.ec2_instance_type
-  key_name          = var.ec2_key_pair_name
+  ami                         = var.ec2_ami
+  instance_type               = var.ec2_instance_type
+  key_name                    = var.ec2_key_pair_name
   associate_public_ip_address = "true"
-  subnet_id = aws_subnet.subnet-1.id
-  vpc_security_group_ids = [aws_security_group.allow-ssh-web.id]
+  subnet_id                   = aws_subnet.subnet-1.id
+  vpc_security_group_ids      = [aws_security_group.allow-ssh-web.id]
 
   user_data = <<-EOF
     #!/bin/bash
@@ -290,11 +326,11 @@ resource "aws_instance" "web-server" {
   }
   metadata_options {
     http_endpoint = "enabled"
-    http_tokens = "required"
+    http_tokens   = "required"
   }
-#   ebs_block_device {
-#     encrypted = true
-#   }
+  #   ebs_block_device {
+  #     encrypted = true
+  #   }
 }
 
 output "server_public_ip" {
