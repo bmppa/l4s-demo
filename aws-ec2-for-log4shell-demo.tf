@@ -1,3 +1,13 @@
+terraform {
+  cloud {
+    organization = "pcs-nym"
+
+    workspaces {
+      name = "l4s-demo"
+    }
+  }
+}
+
 provider "aws" {
   region = var.aws_region
 }
